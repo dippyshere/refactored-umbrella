@@ -20,7 +20,7 @@ function initialise() {
   mass2Input.value = b2Mass;
   mass1velInput.value = b1vel;
   mass2velInput.value = b2vel;
-  renderFrame();
+  renderCanvas();
 }
 document.addEventListener("DOMContentLoaded", initialise);
 
@@ -30,7 +30,7 @@ function resize() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight - (window.innerHeight/3);
   // re-render canvas to prevent canvas from being blank
-  renderFrame();
+  renderCanvas();
 }
 window.addEventListener("resize", resize);
 
@@ -41,7 +41,7 @@ class Block {
     this.pos = pos;
     this.vel = vel;
     this.color = color;
-    this.size = mass.toString().length * 20;
+    this.size = mass.toString().length * 30;
   }
   render() {
     ctx.fillStyle = "white";
@@ -54,7 +54,6 @@ class Block {
     ctx.fillStyle = this.color;
     ctx.fillRect(this.pos, canvas.height - this.size, this.size, this.size);
   }
-
   update(dt) {
     this.pos += this.vel * dt;
   }
@@ -75,7 +74,7 @@ const block2 = new Block(b2Mass, b2Pos, b2vel, "#fc0303");
 // Set up a recursive loop
 let count = 0;
 let lastTime;
-let quit = true;
+let pause = true;
 let accumulator = 0;
 const dt = 0.0001;
 function loop(ts) {
@@ -89,10 +88,10 @@ function loop(ts) {
       update(dt);
       accumulator -= dt;
     }
-    playClack();
-    renderFrame();
+    playClick();
+    renderCanvas();
   }
-  if (!quit) {
+  if (!pause) {
     requestAnimationFrame(loop);
     lastTime = ts;
   }
@@ -106,129 +105,149 @@ function update(dt) {
   checkBlockCollision(block1, block2);
 }
 
-// Make a render function
-function renderFrame() {
+// called whenever the canvas needs to be rendered
+function renderCanvas() {
+  // text colour white
   ctx.fillStyle = "white";
+  // clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // font may revert to default if not installed - havent checked
   ctx.font = canvas.height/17 + "px googlesans";
   ctx.textAlign = "center";
+  // glow + dropshadow effect for canvas elements
   ctx.shadowBlur = 20;
+  // black
   ctx.shadowColor = "#000";
   ctx.fillText(`Collisions: ${numberWithCommas(count)}`, canvas.width/2, canvas.height/4);
   ctx.fillText(`Velocity 1: ${Math.floor(block1.vel)}`, canvas.width/2, canvas.height/4 + canvas.height/12);
   ctx.fillText(`Velocity 2: ${Math.floor(block2.vel)}`, canvas.width/2, canvas.height/4 + canvas.height/6);
+  // blue
   ctx.shadowColor = "#03a1fc";
   block1.render();
+  // red
   ctx.shadowColor = "#fc0303";
   block2.render();
 }
 
-// Make check wall function
+// collision with the left side of the screen
 function checkWall(blk) {
+  // if the block is at or behind the left of the screen
   if (blk.pos <= 0) {
+    // snap to edge
     blk.pos = 0;
+    // invert velocity
     blk.vel *= -1;
+    // add to collision counter
     count++;
-    clacking = true;
+    // play click on next tick
+    pendingClick = true;
   }
 }
-// Check collisions between blocks
+// The implementation of the researched formulas
 function checkBlockCollision(blk1, blk2) {
+  // if the blocks are touching
   if (blk1.pos + blk1.size >= blk2.pos) {
+    // displace them so they are no longer touching
     blk1.pos = blk2.pos - blk1.size;
-
+    // define vars for formula from the values of the blocks at the time of collision
     const m1 = blk1.mass;
     const m2 = blk2.mass;
     const v1i = blk1.vel;
     const v2i = blk2.vel;
-
-    const mom1 = m1 * v1i + m2 * v2i;
-
-    const v2f = (m1 * v2i - m1 * v1i - mom1) / (-1 * m2 - m1);
-    const v1f = v2i + v2f - v1i;
-
-    blk1.vel = v1f;
-    blk2.vel = v2f;
+    // the momentum formula for elastic collisions
+    const momentumFormula = m1 * v1i + m2 * v2i;
+    // calculate the velocity of block 2
+    const velocityBlock2 = (m1 * v2i - m1 * v1i - momentumFormula) / (-1 * m2 - m1);
+    // set the updated velocities
+    blk1.vel = v2i + velocityBlock2 - v1i;
+    blk2.vel = velocityBlock2;
+    // increment collision counter
     count++;
-    clacking = true;
+    // play sound on next tick
+    pendingClick = true;
   }
 }
 
-// Make a play function and bind it to the play button
+// things ran when the play button is clicked
 function play() {
-  quit = false;
-  playButton.style.display = "none";
+  // allow simulation loop to run until reset
+  pause = false;
+  // show reset and hide play
   resetButton.style.display = "block";
+  playButton.style.display = "none";
+  // set the intial velocity of each block to the desired velocity
   block1.vel = Math.floor(mass1velInput.value);
   block2.vel = Math.floor(mass2velInput.value);
   requestAnimationFrame(loop);
 }
-
+// called when clicked
 playButton.addEventListener("click", play);
 
-// Make a reset function and bind it to the reset button
+// functionality of the reset button
 function reset() {
-  quit = true;
-  playButton.style.display = "block";
+  pause = true;
+  // hide reset and show play
   resetButton.style.display = "none";
+  playButton.style.display = "block";
   block1.pos = b1Pos;
   block1.vel = b1vel;
   block2.pos = b2Pos;
   block2.vel = b2vel;
   count = 0;
   lastTime = null;
-  renderFrame();
+  // re-render canvas to show updated state
+  renderCanvas();
 }
-
+// called when clicked
 resetButton.addEventListener("click", reset);
 
-// Make update mass function
-function updateMass(mass, blk, input) {
+// limit max user input + update mass when changed
+function updateBlockMass(mass, blk, input) {
+  // limit for block 1
   if (input === mass1Input) {
+    // upper limit
     if (mass > 1000000) {
       mass = 1000000;
       input.value = 1000000;
     }
+    // lower limit
     if (mass < 1) {
       mass = 1;
       input.value = 1;
     }
   }
-  else if (mass > 10000000000000) {
-    mass = 10000000000000;
-    input.value = 10000000000000;
+  // limit for block 2 (and other blocks if they will ever exist)
+      // the limit exists purely to protect your computer, remove it if you dare
+  else if (mass > 1000000000000000) {
+    mass = 1000000000000000;
+    input.value = 1000000000000000;
   }
+  // update the mass
   blk.mass = mass;
-  if (mass < 1) {
-    blk.size = 5;
-  } else {
-    blk.size = mass.toString().length * 20;
-  }
-  renderFrame();
+  // update visual representation of size
+  blk.size = mass.toString().length * 30;
+  // re-render canvas with updated values to reflect changes visually
+  renderCanvas();
 }
 
+// listeners to call function when changed
+mass1Input.addEventListener("input", e => updateBlockMass(e.target.value, block1, mass1Input));
+mass2Input.addEventListener("input", e => updateBlockMass(e.target.value, block2, mass2Input));
 
-mass1Input.addEventListener("input", e => updateMass(e.target.value, block1, mass1Input));
-mass2Input.addEventListener("input", e => updateMass(e.target.value, block2, mass2Input));
 
-
-// Number formatting utility
+// by Elias Zamaria (input is a number, returns a string with comma formatting)
 function numberWithCommas(x) {
-  if (parseFloat(x) >= 1) {
-    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  } else {
-    return x;
-  }
+  return x.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
 }
 
-// BONUS --- Clack sound!
-const clack = new Audio("clack.wav");
-let clacking = false;
-
-const playClack = () => {
-  if (clacking === true) {
-    clack.currentTime = 0;
-    clack.play();
-    clacking = false;
+// define audio source for click
+const sound = new Audio("clack.wav");
+let pendingClick = false;
+// if pending click when function called, play click
+function playClick() {
+  if (pendingClick === true) {
+    sound.currentTime = 0;
+    sound.play();
+    pendingClick = false;
   }
-};
+}
