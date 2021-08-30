@@ -16,12 +16,15 @@ function initialise() {
   // hide the reset button and show the play button
   resetButton.style.display = "none";
   playButton.style.display = "block";
+  //set default values for inputs
   mass1Input.value = b1Mass;
   mass2Input.value = b2Mass;
   mass1velInput.value = b1vel;
   mass2velInput.value = b2vel;
+  // render canvas so its not blank
   renderCanvas();
 }
+// called once finished loading
 document.addEventListener("DOMContentLoaded", initialise);
 
 // things to run whenever the window changes size
@@ -34,28 +37,37 @@ function resize() {
 }
 window.addEventListener("resize", resize);
 
-// Create block class
+// define a block class
 class Block {
+  // constructor in js is basically __init__ in python
   constructor(mass, pos, vel, color) {
+    // js uses this instead of self
     this.mass = mass;
     this.pos = pos;
     this.vel = vel;
     this.color = color;
+    // the visual size shown is relative to the number of digits in the desired number
     this.size = mass.toString().length * 30;
   }
+  // per instance rendering of the block
   render() {
+    // make text white
     ctx.fillStyle = "white";
     ctx.font = "20px googlesans";
     ctx.fillText(
+        // get the mass with commas
       numberWithCommas(this.mass),
       this.pos + (this.size/2),
       canvas.height - (this.size + 10)
     );
+    // make block colour the one setup when created
     ctx.fillStyle = this.color;
     ctx.fillRect(this.pos, canvas.height - this.size, this.size, this.size);
   }
-  update(dt) {
-    this.pos += this.vel * dt;
+  // called when each block is updated
+  update(delta) {
+    // displaces the block by the velocity adjusted by the delta
+    this.pos += this.vel * delta;
   }
 }
 
@@ -68,65 +80,79 @@ const b2Pos = 250;
 let b1vel = 0;
 let b2vel = -50;
 
+// create the blocks from the class with the desired values
 const block1 = new Block(b1Mass, b1Pos, b1vel, "#03a1fc");
 const block2 = new Block(b2Mass, b2Pos, b2vel, "#fc0303");
 
-// Set up a recursive loop
-let count = 0;
-let lastTime;
+// main simulation loop
+// set number of collisions
+let collisionCounter = 0;
+// create var
+let previousTimeStamp;
+// start simulation paused
 let pause = true;
-let accumulator = 0;
-const dt = 0.0001;
-function loop(ts) {
-  if (lastTime) {
-    let frameTime = ts - lastTime;
-    if (frameTime > 250) {
-      frameTime = 250;
+// for ""sub-stepped" physics
+let counter = 0;
+const maxDelta = 0.0001;
+function simulationloop(timestamp) {
+  if (previousTimeStamp) {
+    // adds frame time to counter
+    counter += timestamp - previousTimeStamp;
+    // physics "sub-stepping" but for javascript.
+    // while the counter var is >= max no. of iterations
+    while (counter >= maxDelta) {
+      // update the collision and apply velocities
+      updateAndCollision(maxDelta);
+      // subtract the delta from the counter and repeat (approx 16 times per frame for 60 fps)
+      counter -= maxDelta;
     }
-    accumulator += frameTime;
-    while (accumulator >= dt) {
-      update(dt);
-      accumulator -= dt;
-    }
+    // play a sound if pending
     playClick();
+    // update the display
     renderCanvas();
   }
+  // if the simulation is allowed to run
   if (!pause) {
-    requestAnimationFrame(loop);
-    lastTime = ts;
+    // call the loop again using requestAnimationFrame
+    requestAnimationFrame(simulationloop);
+    // set the timestamp so that the if statement above can run
+    previousTimeStamp = timestamp;
   }
 }
 
-// Make an update function
-function update(dt) {
+// update blocks position with the velocity amplified by the delta
+function updateAndCollision(dt) {
+  // displace blocks by velocity
   block1.update(dt / 1000);
   block2.update(dt / 1000);
+  // perform collision detection
   checkWall(block1);
   checkBlockCollision(block1, block2);
 }
 
 // called whenever the canvas needs to be rendered
 function renderCanvas() {
-  // text colour white
-  ctx.fillStyle = "white";
   // clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  // font may revert to default if not installed - havent checked
-  ctx.font = canvas.height/17 + "px googlesans";
-  ctx.textAlign = "center";
-  // glow + dropshadow effect for canvas elements
+  // glow + drop shadow effect for canvas elements
   ctx.shadowBlur = 20;
-  // black
-  ctx.shadowColor = "#000";
-  ctx.fillText(`Collisions: ${numberWithCommas(count)}`, canvas.width/2, canvas.height/4);
-  ctx.fillText(`Velocity 1: ${Math.floor(block1.vel)}`, canvas.width/2, canvas.height/4 + canvas.height/12);
-  ctx.fillText(`Velocity 2: ${Math.floor(block2.vel)}`, canvas.width/2, canvas.height/4 + canvas.height/6);
+  ctx.textAlign = "center";
   // blue
   ctx.shadowColor = "#03a1fc";
   block1.render();
   // red
   ctx.shadowColor = "#fc0303";
   block2.render();
+  // text colour white
+  ctx.fillStyle = "white";
+  // font may revert to default if not installed - haven't been able to check
+  ctx.font = canvas.height/17 + "px googlesans";
+  ctx.textAlign = "center";
+  // black
+  ctx.shadowColor = "#000";
+  ctx.fillText(`Collisions: ${numberWithCommas(collisionCounter)}`, canvas.width/2, canvas.height/4);
+  ctx.fillText(`Velocity 1: ${Math.floor(block1.vel)}`, canvas.width/2, canvas.height/4 + canvas.height/12);
+  ctx.fillText(`Velocity 2: ${Math.floor(block2.vel)}`, canvas.width/2, canvas.height/4 + canvas.height/6);
 }
 
 // collision with the left side of the screen
@@ -138,7 +164,7 @@ function checkWall(blk) {
     // invert velocity
     blk.vel *= -1;
     // add to collision counter
-    count++;
+    collisionCounter++;
     // play click on next tick
     pendingClick = true;
   }
@@ -162,7 +188,7 @@ function checkBlockCollision(blk1, blk2) {
     blk1.vel = v2i + velocityBlock2 - v1i;
     blk2.vel = velocityBlock2;
     // increment collision counter
-    count++;
+    collisionCounter++;
     // play sound on next tick
     pendingClick = true;
   }
@@ -175,10 +201,10 @@ function play() {
   // show reset and hide play
   resetButton.style.display = "block";
   playButton.style.display = "none";
-  // set the intial velocity of each block to the desired velocity
+  // set the initial velocity of each block to the desired velocity
   block1.vel = Math.floor(mass1velInput.value);
   block2.vel = Math.floor(mass2velInput.value);
-  requestAnimationFrame(loop);
+  requestAnimationFrame(simulationloop);
 }
 // called when clicked
 playButton.addEventListener("click", play);
@@ -193,8 +219,8 @@ function reset() {
   block1.vel = b1vel;
   block2.pos = b2Pos;
   block2.vel = b2vel;
-  count = 0;
-  lastTime = null;
+  collisionCounter = 0;
+  previousTimeStamp = null;
   // re-render canvas to show updated state
   renderCanvas();
 }
@@ -218,9 +244,9 @@ function updateBlockMass(mass, blk, input) {
   }
   // limit for block 2 (and other blocks if they will ever exist)
       // the limit exists purely to protect your computer, remove it if you dare
-  else if (mass > 1000000000000000) {
-    mass = 1000000000000000;
-    input.value = 1000000000000000;
+  else if (mass > 10000000000000000) {
+    mass = 10000000000000000;
+    input.value = 10000000000000000;
   }
   // update the mass
   blk.mass = mass;
@@ -246,7 +272,9 @@ let pendingClick = false;
 // if pending click when function called, play click
 function playClick() {
   if (pendingClick === true) {
+    // if sound is currently playing and a new sound is requested, restart the sound so it plays faster
     sound.currentTime = 0;
+    // play sound
     sound.play();
     pendingClick = false;
   }
