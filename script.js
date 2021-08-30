@@ -47,7 +47,7 @@ class Block {
     this.vel = vel;
     this.color = color;
     // the visual size shown is relative to the number of digits in the desired number
-    this.size = mass.toString().length * 30;
+    this.size = Math.floor(mass).toString().length * 30;
   }
   // per instance rendering of the block
   render() {
@@ -251,7 +251,7 @@ function updateBlockMass(mass, blk, input) {
   // update the mass
   blk.mass = mass;
   // update visual representation of size
-  blk.size = mass.toString().length * 30;
+  blk.size = Math.floor(mass).toString().length * 30;
   // re-render canvas with updated values to reflect changes visually
   renderCanvas();
 }
