@@ -22,16 +22,17 @@ body {
   box-shadow: 0px 20px 50px #1a1a1a;
 }
 
-.controls {
+.humaninterfacedevice {
   margin: auto;
-  margin-top: 20px;
+  margin-top: 3.5vh;
   width: 50%;
   text-align: center;
   padding: 10px;
   color: white;
+  font-size: 18px;
 }
 
-.group {
+.inputs {
   margin-bottom: 10px;
 }
 
@@ -59,11 +60,11 @@ label {
 }
 
 button {
-  font-size: 24px;
+  font-size: 36px;
   border: none;
   margin: auto;
-  margin-top: 30px;
-  width: 40%;
+  margin-top: 4vh;
+  width: 380px;
   color: white;
   font-weight: bold;
   text-align: center;
@@ -78,10 +79,10 @@ button {
 button:hover {
   border-radius: 10px;
   background: linear-gradient(145deg, #525252, #454545);
-  box-shadow:  5px 5px 16px #232323,
-  -5px -5px 16px #666666;
+  box-shadow:  3px 3px 16px #232323,
+  -3px -3px 16px #666666;
 }
 
 button:active {
-  margin-top: 35px;
+  margin-top: 4.5vh;
 }

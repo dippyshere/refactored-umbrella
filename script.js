@@ -1,37 +1,37 @@
-// Grab DOM elements
+// get elements from the html
 const canvas = document.querySelector("#canvas");
-const playBtn = document.querySelector("#play");
-const resetBtn = document.querySelector("#reset");
-const m1Input = document.querySelector("#m1");
-const m2Input = document.querySelector("#m2");
-const m1velInput = document.querySelector("#m1vel");
-const m2velInput = document.querySelector("#m2vel");
-
-// Get context
+const playButton = document.querySelector("#play");
+const resetButton = document.querySelector("#reset");
+const mass1Input = document.querySelector("#mass1");
+const mass2Input = document.querySelector("#mass2");
+const mass1velInput = document.querySelector("#mass1vel");
+const mass2velInput = document.querySelector("#mass2vel");
+// get canvas
 const ctx = canvas.getContext("2d");
 
-// Create and call an init function once the DOM has loaded
-function init() {
+// things to run once everything has loaded
+function initialise() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight - (window.innerHeight/3);
-  resetBtn.style.display = "none";
-  playBtn.style.display = "block";
-  m1Input.value = b1Mass;
-  m2Input.value = b2Mass;
-  m1velInput.value = b1vel;
-  m2velInput.value = b2vel;
+  // hide the reset button and show the play button
+  resetButton.style.display = "none";
+  playButton.style.display = "block";
+  mass1Input.value = b1Mass;
+  mass2Input.value = b2Mass;
+  mass1velInput.value = b1vel;
+  mass2velInput.value = b2vel;
   renderFrame();
 }
+document.addEventListener("DOMContentLoaded", initialise);
 
-document.addEventListener("DOMContentLoaded", init);
-
-// Create and call a resize function
+// things to run whenever the window changes size
 function resize() {
+  // resize canvas
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight - (window.innerHeight/3);
+  // re-render canvas to prevent canvas from being blank
   renderFrame();
 }
-
 window.addEventListener("resize", resize);
 
 // Create block class
@@ -60,11 +60,12 @@ class Block {
   }
 }
 
-// Instantiate two blocks
+// default values for the blocks
 const b1Pos = 100;
 const b1Mass = 1;
 const b2Mass = 1000000;
 const b2Pos = 250;
+// use let instead of const so that the velocity can change during runtime
 let b1vel = 0;
 let b2vel = -50;
 
@@ -109,13 +110,13 @@ function update(dt) {
 function renderFrame() {
   ctx.fillStyle = "white";
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.font = "20px googlesans";
+  ctx.font = canvas.height/17 + "px googlesans";
   ctx.textAlign = "center";
   ctx.shadowBlur = 20;
   ctx.shadowColor = "#000";
   ctx.fillText(`Collisions: ${numberWithCommas(count)}`, canvas.width/2, canvas.height/4);
-  ctx.fillText(`Velocity 1: ${Math.floor(block1.vel)}`, canvas.width/2, canvas.height/4 + 25);
-  ctx.fillText(`Velocity 2: ${Math.floor(block2.vel)}`, canvas.width/2, canvas.height/4 + 50);
+  ctx.fillText(`Velocity 1: ${Math.floor(block1.vel)}`, canvas.width/2, canvas.height/4 + canvas.height/12);
+  ctx.fillText(`Velocity 2: ${Math.floor(block2.vel)}`, canvas.width/2, canvas.height/4 + canvas.height/6);
   ctx.shadowColor = "#03a1fc";
   block1.render();
   ctx.shadowColor = "#fc0303";
@@ -156,20 +157,20 @@ function checkBlockCollision(blk1, blk2) {
 // Make a play function and bind it to the play button
 function play() {
   quit = false;
-  playBtn.style.display = "none";
-  resetBtn.style.display = "block";
-  block1.vel = Math.floor(m1velInput.value);
-  block2.vel = Math.floor(m2velInput.value);
+  playButton.style.display = "none";
+  resetButton.style.display = "block";
+  block1.vel = Math.floor(mass1velInput.value);
+  block2.vel = Math.floor(mass2velInput.value);
   requestAnimationFrame(loop);
 }
 
-playBtn.addEventListener("click", play);
+playButton.addEventListener("click", play);
 
 // Make a reset function and bind it to the reset button
 function reset() {
   quit = true;
-  playBtn.style.display = "block";
-  resetBtn.style.display = "none";
+  playButton.style.display = "block";
+  resetButton.style.display = "none";
   block1.pos = b1Pos;
   block1.vel = b1vel;
   block2.pos = b2Pos;
@@ -179,10 +180,24 @@ function reset() {
   renderFrame();
 }
 
-resetBtn.addEventListener("click", reset);
+resetButton.addEventListener("click", reset);
 
 // Make update mass function
-function updateMass(mass, blk) {
+function updateMass(mass, blk, input) {
+  if (input === mass1Input) {
+    if (mass > 1000000) {
+      mass = 1000000;
+      input.value = 1000000;
+    }
+    if (mass < 1) {
+      mass = 1;
+      input.value = 1;
+    }
+  }
+  else if (mass > 10000000000000) {
+    mass = 10000000000000;
+    input.value = 10000000000000;
+  }
   blk.mass = mass;
   if (mass < 1) {
     blk.size = 5;
@@ -193,8 +208,8 @@ function updateMass(mass, blk) {
 }
 
 
-m1Input.addEventListener("input", e => updateMass(e.target.value, block1));
-m2Input.addEventListener("input", e => updateMass(e.target.value, block2));
+mass1Input.addEventListener("input", e => updateMass(e.target.value, block1, mass1Input));
+mass2Input.addEventListener("input", e => updateMass(e.target.value, block2, mass2Input));
 
 
 // Number formatting utility

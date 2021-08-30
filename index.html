@@ -10,22 +10,22 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <canvas id="canvas" width="1920" height="672"></canvas>
-    <div class="controls">
-      <div class="group">
-        <label for="m1">Mass 1</label>
-        <input id="m1" type="number">
-          <label for="m1vel">Intial Velocity 1</label>
-          <input id="m1vel" type="number">
+    <canvas id="canvas" width="1920" height="360"></canvas>
+    <div class="humaninterfacedevice">
+      <div class="inputs">
+        <label for="mass1">Mass 1</label>
+        <input id="mass1" type="number" min="1" max="10000000000000">
+          <label for="m1assvel">Intial Velocity 1</label>
+          <input id="mass1vel" type="number">
       </div>
-      <div class="group">
-        <label for="m2">Mass 2</label>
-        <input id="m2" type="number">
-          <label for="m2vel">Intial Velocity 2</label>
-          <input id="m2vel" type="number">
+      <div class="inputs">
+        <label for="mass2">Mass 2</label>
+        <input id="mass2" type="number" min="1" max="1000000">
+          <label for="mass2vel">Intial Velocity 2</label>
+          <input id="mass2vel" type="number">
       </div>
-      <button id="play">Start</button>
-      <button id="reset">Reset</button>
+      <button id="play">Start Simulation</button>
+      <button id="reset">Reset Simulation</button>
     </div>
     <script src="script.js"></script>
 </body>
